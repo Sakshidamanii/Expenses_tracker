@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Expenses Tracker </title>
+    <title>Expenses Tracker – Web</title>
     <style>
         :root {
             --primary: #4338ca;
@@ -484,7 +484,6 @@
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal">
             <h3 id="modalTitle">Add Expense</h3>
-            <div class="modal-form">
                 <div>
                     <label for="descInput">📝 Description</label>
                     <input id="descInput" type="text">
@@ -492,6 +491,10 @@
                 <div>
                     <label for="amountInput">💲 Amount (<span id="currencyLabel">₹</span>)</label>
                     <input id="amountInput" type="number" step="0.01" min="0">
+                </div>
+                <div>
+                    <label for="dateInput">📅 Date</label>
+                    <input id="dateInput" type="date">
                 </div>
                 <div>
                     <label for="categoryInput">📂 Category</label>
@@ -503,7 +506,6 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-            </div>
             <div class="modal-buttons">
                 <button id="cancelModalBtn" class="btn btn-danger" style="padding:4px 10px;">Cancel</button>
                 <button id="okModalBtn" class="btn btn-primary" style="padding:4px 10px;">OK</button>
@@ -574,6 +576,7 @@
         const modalTitle = document.getElementById("modalTitle");
         const descInput = document.getElementById("descInput");
         const amountInput = document.getElementById("amountInput");
+        const dateInput = document.getElementById("dateInput");
         const categoryInput = document.getElementById("categoryInput");
         const currencyLabel = document.getElementById("currencyLabel");
         const cancelModalBtn = document.getElementById("cancelModalBtn");
@@ -811,6 +814,7 @@
             modalTitle.textContent = "Add Expense";
             descInput.value = "";
             amountInput.value = "";
+            dateInput.value = new Date().toISOString().split('T')[0];
             categoryInput.value = "Food";
             currencyLabel.textContent = CURRENCIES[selectedCurrency];
             modalOverlay.style.display = "flex";
@@ -825,6 +829,7 @@
             modalTitle.textContent = "Edit Expense";
             descInput.value = exp.description;
             amountInput.value = exp.amount;
+            dateInput.value = new Date(exp.date).toISOString().split('T')[0];
             categoryInput.value = exp.category;
             currencyLabel.textContent = CURRENCIES[selectedCurrency];
             modalOverlay.style.display = "flex";
@@ -838,17 +843,19 @@
         function submitModal() {
             const desc = descInput.value.trim();
             const amountVal = parseFloat(amountInput.value);
+            const dateVal = dateInput.value;
             const cat = categoryInput.value;
 
             if (!desc) { showAlert("Description cannot be empty!"); return; }
             if (!(amountVal > 0)) { showAlert("Amount must be positive!"); return; }
+            if (!dateVal) { showAlert("Date cannot be empty!"); return; }
 
             if (modalMode === "add") {
                 const newExp = {
                     id: Date.now(),
                     description: desc,
                     amount: amountVal,
-                    date: new Date().toISOString(),
+                    date: new Date(dateVal).toISOString(),
                     category: cat
                 };
                 expenses.push(newExp);
@@ -858,12 +865,14 @@
                 if (exp) {
                     exp.description = desc;
                     exp.amount = amountVal;
+                    exp.date = new Date(dateVal).toISOString();
                     exp.category = cat;
                     showToast("Expense updated");
                 }
             }
             closeModal();
             refreshAll();
+            saveDataSnapshot();
         }
 
         // --- Event Listeners ---
@@ -876,12 +885,14 @@
             budget = val;
             showToast("Budget set");
             refreshAll();
+            saveDataSnapshot();
         });
 
         currencySelect.addEventListener("change", () => {
             selectedCurrency = currencySelect.value;
             currencyLabel.textContent = CURRENCIES[selectedCurrency];
             refreshAll();
+            saveDataSnapshot();
         });
 
         addBtn.addEventListener("click", openAddModal);
@@ -896,6 +907,7 @@
                 selectedRowId = null;
                 refreshAll();
                 showToast("Expense deleted");
+                saveDataSnapshot();
             }
         });
         viewAllBtn.addEventListener("click", () => {
